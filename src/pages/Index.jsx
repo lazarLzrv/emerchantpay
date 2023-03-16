@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import "bootstrap/dist/css/bootstrap.css";
 
@@ -7,11 +7,20 @@ import { trimAfterCapital, formatErrorClass, formatValue, formatDate } from "../
 
 const Index = () => {
     const { getTransactions } = useJson();
-    const list = useSelector((state) => state.transactions.all);
+    const transactions = useSelector((state) => state.transactions.all);
 
+    const [data, setData] = useState([]);
     useEffect(() => {
         getTransactions();
     }, []);
+    useEffect(() => {
+        if (transactions.length > 0) {
+            const arr = transactions.map((item) => {
+                return { ...item, amount: { amount: item.amount, currency: item.currency } };
+            });
+            setData(arr);
+        }
+    }, [transactions]);
 
     const columns = [
         { label: "Id", name: "id" },
@@ -24,20 +33,19 @@ const Index = () => {
         { label: "Client", name: "card_holder" },
         { label: "Card Number", name: "card_number" },
         { label: "Amount", name: "amount" },
-        { label: "Currency", name: "currency" },
     ];
 
-    const formatTdData = (text, name, currency = "") => {
+    const formatTdData = (value, name) => {
         if (name === "created_at") {
-            return formatDate(text);
+            return formatDate(value);
         } else if (name === "type") {
-            return trimAfterCapital(text);
+            return trimAfterCapital(value);
         } else if (name === "error_class") {
-            return formatErrorClass(text);
+            return formatErrorClass(value);
         } else if (name === "amount") {
-            return formatValue(text, currency);
+            return formatValue(value.amount, value.currency);
         } else {
-            return text;
+            return value;
         }
     };
     return (
@@ -48,29 +56,22 @@ const Index = () => {
                         <thead className='text-capitalize'>
                             <tr>
                                 {columns.map(({ name, label }) => {
-                                    if (name !== "currency") {
-                                        return (
-                                            <th key={name} scope='col'>
-                                                {label}
-                                            </th>
-                                        );
-                                    }
+                                    return (
+                                        <th key={name} scope='col'>
+                                            {label}
+                                        </th>
+                                    );
                                 })}
                             </tr>
                         </thead>
                         <tbody>
-                            {list.map((data) => {
-                                let currency = data.currency;
+                            {data.map((data) => {
                                 return (
                                     <tr key={data.id}>
                                         {columns.map(({ name }) => {
-                                            if (name !== "currency") {
-                                                return (
-                                                    <td key={name}>
-                                                        {formatTdData(data[name], name, currency)}
-                                                    </td>
-                                                );
-                                            }
+                                            return (
+                                                <td key={name}>{formatTdData(data[name], name)}</td>
+                                            );
                                         })}
                                     </tr>
                                 );
